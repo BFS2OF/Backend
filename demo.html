@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Room Example</title>
+</head>
+<body>
+<button id="createRoomBtn">Create Room</button>
+<input id="roomCodeInput" placeholder="Enter Room Code">
+<button id="joinRoomBtn">Join Room</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    const socket = io("http://localhost:3000/");
+
+    document.getElementById('createRoomBtn').addEventListener('click', () => {
+        socket.emit('createRoom');
+    });
+
+    document.getElementById('joinRoomBtn').addEventListener('click', () => {
+        const roomCode = document.getElementById('roomCodeInput').value;
+        socket.emit('joinRoom', roomCode);
+    });
+
+    socket.on('roomCreated', (roomCode) => {
+        alert(`Room created! Share this code: ${roomCode}`);
+    });
+
+    socket.on('roomJoined', (roomCode) => {
+        alert(`Joined room ${roomCode}`);
+    });
+
+    socket.on('playerJoined', (playerId) => {
+        console.log(`Player ${playerId} joined`);
+    });
+
+    socket.on('roomError', (message) => {
+        alert(`Error: ${message}`);
+    });
+
+    socket.on('hostDisconnected', () => {
+        alert('Host has disconnected. The game is over.');
+    });
+</script>
+</body>
+</html>
