@@ -41,18 +41,17 @@ io.on('connection', (socket) => {
     socket.on('SHOW_QUESTION', (data, callback) => {
         io.to(room.host).emit('QUESTION_RECEIVED', data.question);
     });
+
+    socket.on('CLOSE_ROOM', () => {
+        const room = Object.values(rooms).find((r) => r.host === socket.id);
+        if (room) {
+            io.to(room.code).emit('hostDisconnected');
+            delete rooms[room.code];
+        };
+
+    });
 });
 
-
-
-socket.on('CLOSE_ROOM', () => {
-    const room = Object.values(rooms).find((r) => r.host === socket.id);
-    if (room) {
-        io.to(room.code).emit('hostDisconnected');
-        delete rooms[room.code];
-    };
-
-});
 
 function generateRoomCode() {
     return Math.floor(1000 + Math.random() * 9000).toString();
