@@ -8,26 +8,21 @@ const io = socketIo(server, {cors: {origin: "*"}});
 
 const rooms = {};
 
-app.use(express.static('public'));
-
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
-
 io.on('connection', (socket) => {
     socket.on('CREATE_ROOM', (data, callback) => {
         const roomCode = generateRoomCode();
         socket.join(roomCode);
         rooms[roomCode] = { host: socket.id, code: roomCode };
 
-        callback(roomCode)
+        callback(roomCode);
     });
+
     socket.on('CHECK_ROOM', (data, callback) => {
         const room = rooms[data.code];
         if (room && room.host !== socket.id) {
-            callback(true)
+            callback(true);
         } else {
-            callback(false)
+            callback(false);
         }
 
     });
@@ -37,14 +32,14 @@ io.on('connection', (socket) => {
         if (room && room.host !== socket.id) {
             socket.join(data.code);
             io.to(room.host).emit('PLAYER_JOINED', socket.id);
-            callback(true)
+            callback(true);
         } else {
-            callback(false)
+            callback(false);
         }
     });
 
     socket.on('SHOW_QUESTION', (data, callback) => {
-        io.to(room.host).emit('QUESTION_RECEIVED', data.question)
+        io.to(room.host).emit('QUESTION_RECEIVED', data.question);
     });
 });
 
@@ -60,7 +55,6 @@ socket.on('CLOSE_ROOM', () => {
 });
 
 function generateRoomCode() {
-    // Generate a 4-digit room code
     return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
