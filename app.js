@@ -84,11 +84,26 @@ io.on('connection', (socket) => {
     socket.on('CLOSE_ROOM', () => {
         if (room) {
             io.to(room.code).emit('ROOM_CLOSED');
+
+            for (const player of Object.keys(room.players))
+                io.sockets.sockets.get(player)?.disconnect();
+
             delete rooms[room.code];
         }
     });
 
     socket.on('disconnect', () => {
+        for (const roomCode in rooms) {
+            if (rooms[roomCode].host === socket.id) {
+                for (const player of Object.keys(rooms[roomCode].players)) {
+                    io.to(player).emit("ROOM_CLOSED");
+                    io.sockets.sockets.get(player)?.disconnect();
+                }
+                delete rooms[roomCode];
+                return;
+            }
+        }
+
         if (room && room.players[socket.id]) {
             io.to(room.host).emit('PLAYER_LEFT', { id: socket.id });
             delete room.players[socket.id];
