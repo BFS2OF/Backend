@@ -14,6 +14,12 @@ io.on('connection', (socket) => {
     let room;
 
     socket.on('CREATE_ROOM', (data, callback) => {
+        for (const roomCode in rooms) {
+            if (rooms[roomCode].host === socket.id) {
+                return callback(roomCode);
+            }
+        }
+
         if (data.password === '1234de') {
             const roomCode = generateRoomCode();
             socket.join(roomCode);
