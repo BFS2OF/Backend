@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
     socket.on('JOIN_ROOM', (data, callback) => {
         room = rooms[data.code];
         if (room && room.state === 'waiting' && !room.players[socket.id]) {
-            socket.join(data.code);
+            socket.join(data?.code?.toString());
             room.players[socket.id] = { name: data.name, character: data.character, points: 0 };
             io.to(room.host).emit('PLAYER_JOINED', { id: socket.id, name: data.name, character: data.character });
             callback(true);
@@ -49,46 +49,53 @@ io.on('connection', (socket) => {
     });
 
     socket.on('SHOW_QUESTION', (data, callback) => {
-        if (room && room.state === 'waiting') {
-            room.state = 'ingame';
-            room.correctSolution = data.solution;
-            io.to(room.code).emit('QUESTION_RECEIVED', { question: data.question });
-            room.startTime = Date.now();
-            callback(true);
-        } else {
-            callback(false);
+        for (const roomCode in rooms) {
+            if (rooms[roomCode].host === socket.id) {
+                rooms[roomCode].state = 'ingame';
+                rooms[roomCode].correctSolution = data.solution;
+                io.to(roomCode.toString()).emit('QUESTION_RECEIVED', { question: data.question });
+                rooms[roomCode].startTime = Date.now();
+                callback(true);
+                return;
+            }
         }
+
+        callback(false);
     });
 
-    socket.on('SUBMIT_ANSWER', (data, callback) => {
+    socket.on('SUBMIT_ANSWER', (data) => {
         if (room && room.state === 'ingame' && room.players[socket.id]) {
             const isCorrect = data.answer === room.correctSolution;
             const points = calculatePoints(isCorrect, room);
             room.players[socket.id].points += points;
-            io.to(socket.id).emit('ANSWER_RECEIVED', { isCorrect, points });
-            callback({ isCorrect, points });
-        } else {
-            callback({ isCorrect: false, points: 0 });
         }
     });
 
     socket.on('SKIP_QUESTION', (data, callback) => {
-        if (room && room.state === 'ingame') {
-            io.to(room.host).emit('QUESTION_SKIPPED');
-            callback(true);
-        } else {
-            callback(false);
+        for (const roomCode in rooms) {
+            if (rooms[roomCode].host === socket.id) {
+                if (rooms[roomCode].state === 'ingame') {
+                    io.to(roomCode.toString()).emit('ANSWER_RECEIVED', { answer: rooms[roomCode].correctSolution });
+                    callback(true);
+                } else {
+                    callback(false);
+                }
+            }
         }
+
     });
 
-    socket.on('CLOSE_ROOM', () => {
-        if (room) {
-            io.to(room.code).emit('ROOM_CLOSED');
+    socket.on('CLOSE_ROOM', (data, callback) => {
+        for (const roomCode in rooms) {
+            if (rooms[roomCode].host === socket.id) {
+                callback(rooms[roomCode]?.players);
+                io.to(roomCode.toString()).emit('ROOM_CLOSED');
 
-            for (const player of Object.keys(room.players))
-                io.sockets.sockets.get(player)?.disconnect();
+                for (const player of Object.keys(rooms[roomCode].players))
+                    io.sockets.sockets.get(player)?.disconnect();
 
-            delete rooms[room.code];
+                delete rooms[roomCode];
+            }
         }
     });
 
