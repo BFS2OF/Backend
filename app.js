@@ -128,7 +128,7 @@ function calculatePoints(isCorrect, room) {
     const timeTaken = Math.min(maxTime, Date.now() - room.startTime);
     const timeFactor = Math.max(0, 1 - timeTaken / maxTime);
 
-    return isCorrect ? Math.round(basePoints * timeFactor) : 0;
+    return isCorrect ? Math.round(basePoints * timeFactor + basePoints) : 0;
 }
 
 const PORT = process.env.PORT || 3000;
